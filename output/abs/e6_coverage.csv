@@ -1,0 +1,23 @@
+id,spark_query,input_partition,expected_output,actual_output,codomain_class,direct_pass,direct_error,e6_function,e6_query,lats_pass,lats_score,covered
+1,SELECT ABS(NULL),P_NULL,NULL,,O_NULL,False,"Execution error: <_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = ""Q353031-23-20260220.092554.935: 	QueryExecutionException(querySubPhase:OPEN, reason:java.lang.UnsupportedOperationException, errorCode:EX001, errorMessage:java.lang.UnsupportedOperationException, errorMetadata:",DIRECT,"```json
+{
+  ""error_analysis"": ""Previous attempts show that ABS(NULL) causes an execution error, and ABS(CAST(NULL AS INTEGER)) returns 0 instead of NULL, indicating e6data's ABS function does not follow standard SQL NULL propagation. The function appears to treat NULL as 0."",
+  ""fix_strategy"": ""Since e6data's ABS doesn't handle NULL correctly, use a CASE expression to explicitly check for NULL before calling ABS. This ensures NULL input produces NULL output, bypassing the non-standard ABS behavior. The expression 'CASE WHEN CAST(NULL AS INTEGER) IS NULL THEN NULL ELSE ABS(CAST(NULL AS INTEGER)) END' will evaluate the IS NULL condition first and return NULL directly without invoking ABS."",
+  ""sql_query"": ""SELECT CASE WHEN CAST(NULL AS INTEGER) IS NULL THEN NULL ELSE ABS(CAST(NULL AS INTEGER)) END""
+}
+```",True,1.0,True
+2,SELECT ABS(-5),P_NEGATIVE_INT,5,5,O_POSITIVE_INT,True,,ABS,SELECT ABS(-5),,,True
+3,SELECT ABS(0),P_ZERO,0,0,O_ZERO,True,,ABS,SELECT ABS(0),,,True
+4,SELECT ABS(5),P_POSITIVE_INT,5,5,O_POSITIVE_INT,True,,ABS,SELECT ABS(5),,,True
+5,SELECT ABS(-3.14),P_NEGATIVE_DECIMAL,3.14,3.14,O_POSITIVE_DECIMAL,True,,ABS,SELECT ABS(-3.14),,,True
+6,SELECT ABS(2.71),P_POSITIVE_DECIMAL,2.71,2.71,O_POSITIVE_DECIMAL,True,,ABS,SELECT ABS(2.71),,,True
+7,SELECT ABS(-9223372036854775808),P_MIN_BIGINT,9223372036854775808,-9223372036854775808,O_LARGE_INT,False,"Output mismatch: expected '9223372036854775808', got '-9223372036854775808'",DIRECT,"```json
+{
+  ""error_analysis"": ""The previous attempts failed because e6data's ABS() function on the literal -9223372036854775808 treats it as a BIGINT, which overflows when trying to return the positive value (max BIGINT is 9223372036854775807). Casting to DECIMAL didn't work because the literal is still parsed as BIGINT first. The key insight from the reflection is to use a string literal and cast it to avoid BIGINT interpretation entirely."",
+  ""fix_strategy"": ""Use a string literal '-9223372036854775808' and cast it to DECIMAL with explicit precision to bypass BIGINT parsing. Then apply ABS() to the DECIMAL value. DECIMAL(19,0) has sufficient precision to hold this value and its absolute value. This ensures the value is never interpreted as BIGINT, avoiding the overflow issue."",
+  ""sql_query"": ""SELECT ABS(CAST('-9223372036854775808' AS DECIMAL(19,0)))""
+}
+```",False,0.5,False
+8,SELECT ABS(CAST('-10' AS INT)),P_STRING_CAST,10,10,O_POSITIVE_INT,True,,ABS,SELECT ABS(CAST('-10' AS INT)),,,True

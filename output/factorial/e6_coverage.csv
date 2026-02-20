@@ -1,0 +1,44 @@
+id,spark_query,input_partition,expected_output,actual_output,codomain_class,direct_pass,direct_error,e6_function,e6_query,lats_pass,lats_score,covered
+1,SELECT FACTORIAL(NULL),P_NULL,NULL,NULL,O_NULL,True,,FACTORIAL,SELECT FACTORIAL(NULL),,,True
+2,SELECT FACTORIAL(-5),P_NEGATIVE,NULL,,O_NULL,False,"Execution error: <_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = ""Q127003-50-20260220.115221.422: 	QueryExecutionException(querySubPhase:OPEN, reason:java.lang.IllegalArgumentException: Factorial is not defined for negative numbers or numbers greater than 20, errorCode:EX001,",DIRECT,"```json
+{
+  ""error_analysis"": ""The previous attempt used FACTORIAL(-5) directly, which threw an IllegalArgumentException in e6data because e6data's FACTORIAL function does not accept negative numbers. However, Spark's FACTORIAL returns NULL for negative inputs instead of throwing an error."",
+  ""fix_strategy"": ""Wrap FACTORIAL in a CASE expression to check if the input is negative. If negative, return NULL explicitly. Otherwise, call FACTORIAL. This mimics Spark's behavior of returning NULL for negative inputs."",
+  ""sql_query"": ""SELECT CASE WHEN -5 < 0 THEN NULL ELSE FACTORIAL(-5) END""
+}
+```",True,1.0,True
+3,SELECT FACTORIAL(0),P_ZERO,1,1,O_ONE,True,,FACTORIAL,SELECT FACTORIAL(0),,,True
+4,SELECT FACTORIAL(1),P_ONE,1,1,O_ONE,True,,FACTORIAL,SELECT FACTORIAL(1),,,True
+5,SELECT FACTORIAL(2),P_SMALL_POS,2,2,O_SMALL_FACTORIAL,True,,FACTORIAL,SELECT FACTORIAL(2),,,True
+6,SELECT FACTORIAL(5),P_SMALL_POS,120,120,O_SMALL_FACTORIAL,True,,FACTORIAL,SELECT FACTORIAL(5),,,True
+7,SELECT FACTORIAL(10),P_MEDIUM_POS,3628800,3628800,O_SMALL_FACTORIAL,True,,FACTORIAL,SELECT FACTORIAL(10),,,True
+8,SELECT FACTORIAL(15),P_LARGE_POS,1307674368000,1307674368000,O_LARGE_FACTORIAL,True,,FACTORIAL,SELECT FACTORIAL(15),,,True
+9,SELECT FACTORIAL(20),P_LARGE_POS,2432902008176640000,2432902008176640000,O_LARGE_FACTORIAL,True,,FACTORIAL,SELECT FACTORIAL(20),,,True
+10,SELECT FACTORIAL(21),P_OVERFLOW,NULL,,O_NULL,False,"Execution error: <_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = ""Q127003-58-20260220.115230.026: 	QueryExecutionException(querySubPhase:OPEN, reason:java.lang.IllegalArgumentException: Factorial is not defined for negative numbers or numbers greater than 20, errorCode:EX001,",DIRECT,"```json
+{
+  ""error_analysis"": ""The previous attempt failed because e6data's FACTORIAL function throws an error for values > 20 instead of returning NULL like Spark SQL does. The error message confirms: 'Factorial is not defined for negative numbers or numbers greater than 20'"",
+  ""fix_strategy"": ""Wrap FACTORIAL in a CASE statement to check if the input is greater than 20 or less than 0, returning NULL in those cases. For valid range (0-20), call FACTORIAL normally."",
+  ""sql_query"": ""SELECT CASE WHEN 21 > 20 OR 21 < 0 THEN NULL ELSE FACTORIAL(21) END""
+}
+```",True,1.0,True
+11,SELECT FACTORIAL(100),P_LARGE_OVERFLOW,NULL,,O_NULL,False,"Execution error: <_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = ""Q127003-59-20260220.115230.646: 	QueryExecutionException(querySubPhase:OPEN, reason:java.lang.IllegalArgumentException: Factorial is not defined for negative numbers or numbers greater than 20, errorCode:EX001,",DIRECT,"```json
+{
+  ""error_analysis"": ""The previous attempt failed because e6data's FACTORIAL function throws an error for values greater than 20, rather than returning NULL as Spark does. The error message explicitly states 'Factorial is not defined for negative numbers or numbers greater than 20'."",
+  ""fix_strategy"": ""Wrap FACTORIAL in a CASE statement to check if the input is greater than 20 or less than 0, returning NULL in those cases. This mimics Spark's behavior of returning NULL for overflow conditions."",
+  ""sql_query"": ""SELECT CASE WHEN 100 > 20 OR 100 < 0 THEN NULL ELSE FACTORIAL(100) END""
+}
+```",True,1.0,True
+12,SELECT FACTORIAL('5'),P_STRING,120,120,O_SMALL_FACTORIAL,True,,FACTORIAL,SELECT FACTORIAL('5'),,,True
+13,SELECT FACTORIAL(5.5),P_DECIMAL,120,720,O_SMALL_FACTORIAL,False,"Output mismatch: expected '120', got '720'",DIRECT,"```json
+{
+  ""error_analysis"": ""The previous attempt returned 720 instead of 120. This indicates that e6data's FACTORIAL function is computing FACTORIAL(6) = 720 instead of FACTORIAL(5) = 120. The issue is that e6data is rounding 5.5 to 6 (banker's rounding or standard rounding), while Spark truncates 5.5 to 5 when implicitly casting DECIMAL to INT for the FACTORIAL function."",
+  ""fix_strategy"": ""To match Spark's truncation behavior, explicitly cast the decimal to INT using CAST(5.5 AS INT) or use FLOOR(5.5) to truncate before passing to FACTORIAL. This ensures the value is truncated to 5, not rounded to 6."",
+  ""sql_query"": ""SELECT FACTORIAL(CAST(5.5 AS INT))""
+}
+```",True,1.0,True

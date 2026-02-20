@@ -1,0 +1,9 @@
+id,query,input_partition,actual_output,codomain_class,reasoning
+1,SELECT ABS(NULL),P_NULL,NULL,O_NULL,NULL input propagates to NULL output
+2,SELECT ABS(-5),P_NEGATIVE_INT,5,O_POSITIVE_INT,Negative integer returns positive absolute value
+3,SELECT ABS(0),P_ZERO,0,O_ZERO,Zero is its own absolute value
+4,SELECT ABS(5),P_POSITIVE_INT,5,O_POSITIVE_INT,Positive integer unchanged
+5,SELECT ABS(-3.14),P_NEGATIVE_DECIMAL,3.14,O_POSITIVE_DECIMAL,Negative decimal returns positive
+6,SELECT ABS(2.71),P_POSITIVE_DECIMAL,2.71,O_POSITIVE_DECIMAL,Positive decimal unchanged
+7,SELECT ABS(-9223372036854775808),P_MIN_BIGINT,9223372036854775808,O_LARGE_INT,Minimum BIGINT boundary
+8,"SELECT ABS(CAST('-10' AS INT))",P_STRING_CAST,10,O_POSITIVE_INT,String cast to integer then ABS applied

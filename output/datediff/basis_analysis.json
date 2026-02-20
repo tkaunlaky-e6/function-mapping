@@ -1,0 +1,184 @@
+{
+  "function_name": "DATEDIFF",
+  "dialect": "spark",
+  "understanding": "DATEDIFF(endDate, startDate) returns the number of days from startDate to endDate. Returns endDate - startDate in days. Accepts DATE, TIMESTAMP (truncated to date), and castable STRING types. Time components in timestamps are ignored - only the date portion is used for calculation.",
+  
+  "parameters": [
+    {
+      "name": "endDate",
+      "real_domain": "The real domain is: {NULL} ∪ {all valid DATE values} ∪ {all valid TIMESTAMP values} ∪ {all STRING values castable to DATE}. Date range: 0001-01-01 to 9999-12-31. Non-castable types (INTEGER, BOOLEAN, ARRAY, etc.) error.",
+      "partitions": [
+        {
+          "name": "P_NULL",
+          "predicate": "endDate IS NULL",
+          "representative": "NULL",
+          "why_distinct": "NULL propagation - returns NULL regardless of other parameter"
+        },
+        {
+          "name": "P_DATE",
+          "predicate": "endDate IS NOT NULL AND endDate is DATE type",
+          "representative": "DATE '2024-01-16'",
+          "why_distinct": "Standard DATE value - native type handling"
+        },
+        {
+          "name": "P_DATE_EXTREME",
+          "predicate": "endDate IS NOT NULL AND endDate is extreme boundary (0001-01-01 or 9999-12-31)",
+          "representative": "DATE '9999-12-31'",
+          "why_distinct": "Tests maximum valid date range limits"
+        },
+        {
+          "name": "P_TIMESTAMP",
+          "predicate": "endDate IS NOT NULL AND endDate is TIMESTAMP type",
+          "representative": "TIMESTAMP '2024-01-16 10:30:00'",
+          "why_distinct": "TIMESTAMP truncates to DATE - time component is ignored"
+        },
+        {
+          "name": "P_STRING_CASTABLE",
+          "predicate": "endDate IS NOT NULL AND endDate is STRING castable to DATE",
+          "representative": "'2024-01-16'",
+          "why_distinct": "Implicit cast from STRING to DATE"
+        }
+      ],
+      "spanning_proof": "Partitions: {NULL} ∪ {valid DATE} ∪ {extreme DATE} ∪ {TIMESTAMP} ∪ {castable STRING}. Every accepted input is either NULL, a DATE (including extremes as subset), a TIMESTAMP, or a castable STRING. Non-castable types error and are not in the real domain. P_DATE_EXTREME ⊂ P_DATE but separated to test extreme boundaries. Union covers all accepted inputs. No gap."
+    },
+    {
+      "name": "startDate",
+      "real_domain": "The real domain is: {NULL} ∪ {all valid DATE values} ∪ {all valid TIMESTAMP values} ∪ {all STRING values castable to DATE}. Date range: 0001-01-01 to 9999-12-31. Non-castable types (INTEGER, BOOLEAN, ARRAY, etc.) error.",
+      "partitions": [
+        {
+          "name": "P_NULL",
+          "predicate": "startDate IS NULL",
+          "representative": "NULL",
+          "why_distinct": "NULL propagation - returns NULL regardless of other parameter"
+        },
+        {
+          "name": "P_DATE",
+          "predicate": "startDate IS NOT NULL AND startDate is DATE type",
+          "representative": "DATE '2024-01-15'",
+          "why_distinct": "Standard DATE value - native type handling"
+        },
+        {
+          "name": "P_DATE_EXTREME",
+          "predicate": "startDate IS NOT NULL AND startDate is extreme boundary (0001-01-01 or 9999-12-31)",
+          "representative": "DATE '0001-01-01'",
+          "why_distinct": "Tests maximum valid date range limits"
+        },
+        {
+          "name": "P_TIMESTAMP",
+          "predicate": "startDate IS NOT NULL AND startDate is TIMESTAMP type",
+          "representative": "TIMESTAMP '2024-01-15 22:00:00'",
+          "why_distinct": "TIMESTAMP truncates to DATE - time component is ignored"
+        },
+        {
+          "name": "P_STRING_CASTABLE",
+          "predicate": "startDate IS NOT NULL AND startDate is STRING castable to DATE",
+          "representative": "'2024-01-15'",
+          "why_distinct": "Implicit cast from STRING to DATE"
+        }
+      ],
+      "spanning_proof": "Partitions: {NULL} ∪ {valid DATE} ∪ {extreme DATE} ∪ {TIMESTAMP} ∪ {castable STRING}. Every accepted input is either NULL, a DATE (including extremes as subset), a TIMESTAMP, or a castable STRING. Non-castable types error and are not in the real domain. P_DATE_EXTREME ⊂ P_DATE but separated to test extreme boundaries. Union covers all accepted inputs. No gap."
+    }
+  ],
+  
+  "coupled_parameters": "The two date parameters interact: the difference is directional. endDate > startDate yields positive; endDate < startDate yields negative; endDate = startDate yields zero. Leap years, month boundaries, and year boundaries are tested to ensure date arithmetic handles all calendar edge cases correctly.",
+  
+  "output_range": {
+    "type": "INTEGER or NULL",
+    "bounds": [
+      "Result is NULL if either parameter is NULL",
+      "Result = (endDate - startDate) in days",
+      "Range: approximately -3652058 to +3652058 (based on valid date range 0001-01-01 to 9999-12-31)",
+      "Zero when both dates are the same",
+      "Positive when endDate > startDate",
+      "Negative when endDate < startDate"
+    ],
+    "relationship_to_input": "Output is the count of days between two dates. Magnitude ≤ max possible days between date boundaries. Sign indicates direction: positive = forward in time, negative = backward."
+  },
+  
+  "codomain_classes": [
+    {
+      "name": "O_NULL",
+      "predicate": "Either endDate or startDate is NULL",
+      "why_distinct": "NULL propagation - distinct from numeric outputs"
+    },
+    {
+      "name": "O_ZERO",
+      "predicate": "endDate = startDate (same date)",
+      "why_distinct": "Identity case - no time difference"
+    },
+    {
+      "name": "O_POSITIVE",
+      "predicate": "endDate > startDate AND difference is 1-99 days",
+      "why_distinct": "Small positive difference - forward in time, typical use case"
+    },
+    {
+      "name": "O_LARGE_POSITIVE",
+      "predicate": "endDate > startDate AND difference is 100-9999 days",
+      "why_distinct": "Medium positive difference - spans months/years"
+    },
+    {
+      "name": "O_VERY_LARGE_POSITIVE",
+      "predicate": "endDate > startDate AND difference is ≥10000 days",
+      "why_distinct": "Extreme positive difference - tests maximum range"
+    },
+    {
+      "name": "O_NEGATIVE",
+      "predicate": "endDate < startDate AND difference is -1 to -99 days",
+      "why_distinct": "Small negative difference - backward in time"
+    },
+    {
+      "name": "O_LARGE_NEGATIVE",
+      "predicate": "endDate < startDate AND difference is ≤-100 days",
+      "why_distinct": "Large negative difference - backward spans months/years"
+    }
+  ],
+  
+  "surjectivity_check": {
+    "total_codomain_classes": 7,
+    "covered_classes": 7,
+    "coverage": 1.0,
+    "mapping": {
+      "O_NULL": ["query 4", "query 5", "query 6"],
+      "O_ZERO": ["query 3", "query 21"],
+      "O_POSITIVE": ["query 1", "query 7", "query 8", "query 9", "query 11", "query 12", "query 13", "query 14", "query 18", "query 19", "query 20", "query 22", "query 23", "query 24", "query 25", "query 26"],
+      "O_LARGE_POSITIVE": ["query 10", "query 16"],
+      "O_VERY_LARGE_POSITIVE": ["query 15"],
+      "O_NEGATIVE": ["query 2"],
+      "O_LARGE_NEGATIVE": ["query 17"]
+    },
+    "uncovered_classes": [],
+    "is_complete": true
+  },
+  
+  "basis_completeness": {
+    "input_spanning": true,
+    "output_surjectivity": true,
+    "is_mathematically_complete": true,
+    "basis_size": 26,
+    "explanation": "INPUT SPANNING: All partitions for both parameters span their real domains. endDate and startDate each have 5 partitions covering {NULL, DATE, extreme DATE, TIMESTAMP, castable STRING}, which exhausts all accepted types and value categories. OUTPUT SURJECTIVITY: All 7 codomain classes are covered by the 26 queries. No output category is untested. The basis is COMPLETE."
+  },
+  
+  "special_cases_tested": [
+    "NULL propagation (either or both parameters)",
+    "Same date (zero difference)",
+    "1 day forward and backward",
+    "Multi-day differences (5 days, 365 days, 3652058 days)",
+    "TIMESTAMP inputs (time component ignored, truncated to date)",
+    "STRING implicit casting to DATE",
+    "Mixed types (STRING + DATE)",
+    "Year boundaries (2023-12-31 to 2024-01-01)",
+    "Month boundaries (Jan-Feb, Feb-Mar, Mar-Apr, Jun-Jul)",
+    "Leap year handling (2024-02-29, 2020-02-29, 2000-02-29)",
+    "Non-leap century year (2100)",
+    "Timestamp same day different times (should yield 0)",
+    "Timestamp crossing midnight (should yield 1)",
+    "Extreme date range (0001-01-01 to 9999-12-31)",
+    "Negative differences (backward in time)"
+  ],
+  
+  "error_cases_discovered": [
+    "Non-castable types: INTEGER, BOOLEAN, ARRAY error with DATATYPE_MISMATCH",
+    "Invalid date strings: 'invalid', '' error with CAST_INVALID_INPUT",
+    "Function requires exactly 2 parameters - both must be date-like types"
+  ]
+}

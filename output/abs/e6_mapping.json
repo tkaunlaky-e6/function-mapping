@@ -1,0 +1,107 @@
+{
+  "spark_function": "ABS",
+  "total_basis_queries": 8,
+  "overall_coverage": 0.875,
+  "minimal_function_set": [
+    "ABS",
+    "DIRECT"
+  ],
+  "uncovered_partitions": [
+    "P_MIN_BIGINT"
+  ],
+  "coverage_matrix": {
+    "DIRECT": {
+      "covered_queries": [
+        1
+      ],
+      "count": 1,
+      "coverage": 0.125
+    },
+    "ABS": {
+      "covered_queries": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        8
+      ],
+      "count": 6,
+      "coverage": 0.75
+    }
+  },
+  "translations": [
+    {
+      "id": 1,
+      "spark_query": "SELECT ABS(NULL)",
+      "input_partition": "P_NULL",
+      "e6_query": "```json\n{\n  \"error_analysis\": \"Previous attempts show that ABS(NULL) causes an execution error, and ABS(CAST(NULL AS INTEGER)) returns 0 instead of NULL, indicating e6data's ABS function does not follow standard SQL NULL propagation. The function appears to treat NULL as 0.\",\n  \"fix_strategy\": \"Since e6data's ABS doesn't handle NULL correctly, use a CASE expression to explicitly check for NULL before calling ABS. This ensures NULL input produces NULL output, bypassing the non-standard ABS behavior. The expression 'CASE WHEN CAST(NULL AS INTEGER) IS NULL THEN NULL ELSE ABS(CAST(NULL AS INTEGER)) END' will evaluate the IS NULL condition first and return NULL directly without invoking ABS.\",\n  \"sql_query\": \"SELECT CASE WHEN CAST(NULL AS INTEGER) IS NULL THEN NULL ELSE ABS(CAST(NULL AS INTEGER)) END\"\n}\n```",
+      "e6_function": "DIRECT",
+      "covered": true,
+      "reasoning": "This translation succeeded because it worked around e6data's non-standard ABS() behavior with NULL values. The strategy correctly identified that e6data's ABS function doesn't properly propagate NULL (treating it as 0 instead), which caused the original direct translation to fail. By wrapping the logic in a CASE expression that explicitly checks 'IS NULL' before calling ABS, the translation ensures NULL input returns NULL output without ever invoking the problematic ABS function. Since 'CAST(NULL AS INTEGER) IS NULL' always evaluates to TRUE, the THEN branch returns NULL directly, matching Spark's expected behavior. This pattern of pre-checking for NULL before calling functions that don't handle NULL correctly is a reliable workaround for e6data's non-standard NULL handling in certain functions. For future translations involving ABS() or similar functions that may not propagate NULL correctly in e6data, always wrap them in a NULL-checking CASE expression."
+    },
+    {
+      "id": 2,
+      "spark_query": "SELECT ABS(-5)",
+      "input_partition": "P_NEGATIVE_INT",
+      "e6_query": "SELECT ABS(-5)",
+      "e6_function": "ABS",
+      "covered": true,
+      "reasoning": "Negative integer returns positive absolute value"
+    },
+    {
+      "id": 3,
+      "spark_query": "SELECT ABS(0)",
+      "input_partition": "P_ZERO",
+      "e6_query": "SELECT ABS(0)",
+      "e6_function": "ABS",
+      "covered": true,
+      "reasoning": "Zero is its own absolute value"
+    },
+    {
+      "id": 4,
+      "spark_query": "SELECT ABS(5)",
+      "input_partition": "P_POSITIVE_INT",
+      "e6_query": "SELECT ABS(5)",
+      "e6_function": "ABS",
+      "covered": true,
+      "reasoning": "Positive integer unchanged"
+    },
+    {
+      "id": 5,
+      "spark_query": "SELECT ABS(-3.14)",
+      "input_partition": "P_NEGATIVE_DECIMAL",
+      "e6_query": "SELECT ABS(-3.14)",
+      "e6_function": "ABS",
+      "covered": true,
+      "reasoning": "Negative decimal returns positive"
+    },
+    {
+      "id": 6,
+      "spark_query": "SELECT ABS(2.71)",
+      "input_partition": "P_POSITIVE_DECIMAL",
+      "e6_query": "SELECT ABS(2.71)",
+      "e6_function": "ABS",
+      "covered": true,
+      "reasoning": "Positive decimal unchanged"
+    },
+    {
+      "id": 7,
+      "spark_query": "SELECT ABS(-9223372036854775808)",
+      "input_partition": "P_MIN_BIGINT",
+      "e6_query": "```json\n{\n  \"error_analysis\": \"The previous attempts failed because e6data's ABS() function on the literal -9223372036854775808 treats it as a BIGINT, which overflows when trying to return the positive value (max BIGINT is 9223372036854775807). Casting to DECIMAL didn't work because the literal is still parsed as BIGINT first. The key insight from the reflection is to use a string literal and cast it to avoid BIGINT interpretation entirely.\",\n  \"fix_strategy\": \"Use a string literal '-9223372036854775808' and cast it to DECIMAL with explicit precision to bypass BIGINT parsing. Then apply ABS() to the DECIMAL value. DECIMAL(19,0) has sufficient precision to hold this value and its absolute value. This ensures the value is never interpreted as BIGINT, avoiding the overflow issue.\",\n  \"sql_query\": \"SELECT ABS(CAST('-9223372036854775808' AS DECIMAL(19,0)))\"\n}\n```",
+      "e6_function": "DIRECT",
+      "covered": false,
+      "reasoning": "The translation failed because e6data's ABS() function appears to have a bug or limitation when handling the minimum BIGINT value (-9223372036854775808), even when cast to DECIMAL. The strategy of casting the string literal to DECIMAL(19,0) should theoretically work, but the execution result shows it still returns the negative value, suggesting that either: (1) e6data is still internally treating this as BIGINT before applying ABS(), (2) the ABS() function itself has an overflow issue with this specific edge case value, or (3) the DECIMAL cast is not being applied before the ABS() operation. \n\nTo fix this, try these alternatives:\n1. Use a larger DECIMAL precision like DECIMAL(20,0) or DECIMAL(38,0) to ensure there's room for the positive value\n2. Try casting to NUMERIC instead of DECIMAL: ABS(CAST('-9223372036854775808' AS NUMERIC))\n3. Use arithmetic to compute the absolute value: CASE WHEN CAST('-9223372036854775808' AS DECIMAL(20,0)) < 0 THEN CAST('-9223372036854775808' AS DECIMAL(20,0)) * -1 ELSE CAST('-9223372036854775808' AS DECIMAL(20,0)) END\n4. Try double casting: ABS(CAST(CAST('-9223372036854775808' AS VARCHAR) AS DECIMAL(20,0)))\n5. Use GREATEST() function: GREATEST(CAST('-9223372036854775808' AS DECIMAL(20,0)), CAST('-9223372036854775808' AS DECIMAL(20,0)) * -1)\n\nThe most likely solution is option 1 (larger precision) or option 3 (manual absolute value calculation) to completely bypass any ABS() function limitations."
+    },
+    {
+      "id": 8,
+      "spark_query": "SELECT ABS(CAST('-10' AS INT))",
+      "input_partition": "P_STRING_CAST",
+      "e6_query": "SELECT ABS(CAST('-10' AS INT))",
+      "e6_function": "ABS",
+      "covered": true,
+      "reasoning": "String cast to integer then ABS applied"
+    }
+  ]
+}

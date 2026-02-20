@@ -1,0 +1,26 @@
+id,query,input_partition,actual_output,codomain_class,reasoning
+1,"SELECT CONCAT_WS(NULL, 'a', 'b')",sep=NULL,NULL,O_NULL,NULL separator propagates to output regardless of arguments
+2,SELECT CONCAT_WS(','),no_args,,O_EMPTY,Zero arguments after separator returns empty string
+3,"SELECT CONCAT_WS(',', NULL, NULL, NULL)",all_args_null,,O_EMPTY,All NULL arguments are skipped resulting in empty string
+4,"SELECT CONCAT_WS(',', 'a')",single_survivor,a,O_SINGLE,Single non-NULL argument returns that value without separator
+5,"SELECT CONCAT_WS(',', 'a', 'b', 'c')",multi_string,a,b,c,O_JOINED,Standard joining of multiple string arguments with separator
+6,"SELECT CONCAT_WS(',', 'a', NULL, 'b')",null_skip,a,b,O_JOINED,NULL arguments are skipped but non-NULL values are joined
+7,"SELECT CONCAT_WS(',', '', 'a', '')",empty_strings_preserved,",a,",O_JOINED_EMPTY,Empty strings are preserved unlike NULL; creates consecutive separators
+8,"SELECT CONCAT_WS(',', 1, 2, 3)",int_args,"1,2,3",O_JOINED,Integer arguments are implicitly cast to string
+9,"SELECT CONCAT_WS(',', 1.5, 2.75)",decimal_args,"1.5,2.75",O_JOINED,Decimal arguments are implicitly cast to string with precision preserved
+10,"SELECT CONCAT_WS(',', -1, -2.5)",negative_numbers,"-1,-2.5",O_JOINED,Negative numbers are cast to string with sign preserved
+11,"SELECT CONCAT_WS(',', TRUE, FALSE)",boolean_args,"true,false",O_JOINED,Boolean arguments are cast to lowercase string
+12,"SELECT CONCAT_WS(',', DATE '2024-01-01')",date_arg,2024-01-01,O_SINGLE,Date argument cast to ISO format string
+13,"SELECT CONCAT_WS(',', TIMESTAMP '2024-01-01 10:30:00')",timestamp_arg,2024-01-01 10:30:00,O_SINGLE,Timestamp argument cast to string with default format
+14,"SELECT CONCAT_WS(',', array('a', 'b'))",array_strings,a,b,O_JOINED,Array argument expands into individual elements for joining
+15,"SELECT CONCAT_WS(',', array('a', NULL, 'b'))",array_with_nulls,a,b,O_JOINED,NULLs inside arrays are skipped like scalar NULLs
+16,"SELECT CONCAT_WS(',', array())",empty_array,,O_EMPTY,Empty array has no elements to join
+17,"SELECT CONCAT_WS(',', array('a', 'b'), 'c')",array_scalar_mix,a,b,c,O_JOINED,Arrays are expanded then joined with scalar arguments
+18,"SELECT CONCAT_WS(',', 1, 'text', TRUE, NULL)",mixed_types,"1,text,true",O_JOINED,All types cast to string; NULL skipped
+19,"SELECT CONCAT_WS(',', UPPER('abc'), LOWER('XYZ'))",nested_functions,"ABC,xyz",O_JOINED,Expression results evaluated then joined
+20,"SELECT CONCAT_WS('', 'a', 'b', 'c')",empty_separator,abc,O_EMPTY_SEP,Empty separator concatenates values without gap
+21,"SELECT CONCAT_WS('|||', 'a', 'b')",multi_char_sep,a|||b,O_MULTI_SEP,Multi-character separator preserved in output
+22,"SELECT CONCAT_WS(1, 'a', 'b')",non_string_sep,a1b,O_JOINED,Non-string separator cast to string
+23,"SELECT CONCAT_WS(',', array(1, 2, 3))",array_integers,"1,2,3",O_JOINED,Integer array elements cast to string
+24,"SELECT CONCAT_WS(',', array(), array())",multiple_empty_arrays,,O_EMPTY,Multiple empty arrays have no elements
+25,"SELECT CONCAT_WS(',', array('x'), 'y', array('z'))",multiple_arrays_scalar,"x,y,z",O_JOINED,Multiple arrays expanded and joined with scalars

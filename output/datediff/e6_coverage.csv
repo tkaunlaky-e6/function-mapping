@@ -1,0 +1,153 @@
+id,spark_query,input_partition,expected_output,actual_output,codomain_class,direct_pass,direct_error,e6_function,e6_query,lats_pass,lats_score,covered
+1,"SELECT DATEDIFF(DATE '2024-01-16', DATE '2024-01-15')",endDate=P_DATE; startDate=P_DATE,1,-1,O_POSITIVE,False,"Output mismatch: expected '1', got '-1'",DIRECT,"```json
+{
+  ""error_analysis"": ""The e6data DATEDIFF function has reversed parameter order compared to Spark SQL. In Spark, DATEDIFF(endDate, startDate) returns endDate - startDate. In e6data, DATEDIFF appears to return startDate - endDate (first parameter minus second parameter), which is why we're getting -1 instead of 1."",
+  ""fix_strategy"": ""Swap the parameter order in DATEDIFF to account for e6data's reversed semantics. Use DATEDIFF(startDate, endDate) to get the equivalent of Spark's DATEDIFF(endDate, startDate)."",
+  ""sql_query"": ""SELECT DATEDIFF(DATE '2024-01-15', DATE '2024-01-16')""
+}
+```",True,1.0,True
+2,"SELECT DATEDIFF(DATE '2024-01-15', DATE '2024-01-16')",endDate=P_DATE; startDate=P_DATE,-1,1,O_NEGATIVE,False,"Output mismatch: expected '-1', got '1'",DIRECT,"```json
+{
+  ""error_analysis"": ""The e6data DATEDIFF function has reversed parameter order compared to Spark SQL. In Spark, DATEDIFF(endDate, startDate) returns endDate - startDate. In e6data, DATEDIFF(date1, date2) appears to return date2 - date1, which is why all results have opposite signs."",
+  ""fix_strategy"": ""Swap the parameter order: use DATEDIFF(startDate, endDate) instead of DATEDIFF(endDate, startDate). This will reverse the sign to match Spark's behavior where DATEDIFF(DATE '2024-01-15', DATE '2024-01-16') should return -1."",
+  ""sql_query"": ""SELECT DATEDIFF(DATE '2024-01-16', DATE '2024-01-15')""
+}
+```",True,1.0,True
+3,"SELECT DATEDIFF(DATE '2024-01-15', DATE '2024-01-15')",endDate=P_DATE; startDate=P_DATE,0,0,O_ZERO,True,,DATEDIFF,"SELECT DATEDIFF(DATE '2024-01-15', DATE '2024-01-15')",,,True
+10,"SELECT DATEDIFF(DATE '2024-12-31', DATE '2024-01-01')",endDate=P_DATE; startDate=P_DATE,365,-365,O_LARGE_POSITIVE,False,"Output mismatch: expected '365', got '-365'",DIRECT,"```json
+{
+  ""error_analysis"": ""The e6data DATEDIFF function has reversed parameter order compared to Spark SQL. In Spark, DATEDIFF(endDate, startDate) returns endDate - startDate. In e6data, DATEDIFF(date1, date2) appears to return date2 - date1, resulting in negated values. All failing queries show the exact opposite sign of the expected result."",
+  ""fix_strategy"": ""Reverse the parameter order in the DATEDIFF call. Instead of DATEDIFF(endDate, startDate), use DATEDIFF(startDate, endDate) to get the correct sign. This will make e6data compute startDate - endDate, which when negated gives us endDate - startDate as Spark expects."",
+  ""sql_query"": ""SELECT DATEDIFF(DATE '2024-01-01', DATE '2024-12-31')""
+}
+```",True,1.0,True
+11,"SELECT DATEDIFF(DATE '2025-01-01', DATE '2024-12-31')",endDate=P_DATE; startDate=P_DATE,1,-1,O_POSITIVE,False,"Output mismatch: expected '1', got '-1'",DIRECT,"```json
+{
+  ""error_analysis"": ""The e6data DATEDIFF function has reversed argument order compared to Spark SQL. In Spark, DATEDIFF(end_date, start_date) returns end_date - start_date. In e6data, DATEDIFF(date1, date2) appears to return date2 - date1 (or date1 - date2 with opposite sign). All failing queries show the negated expected value, confirming the arguments are reversed."",
+  ""fix_strategy"": ""Swap the argument order in DATEDIFF to match e6data's semantics. Change DATEDIFF(DATE '2025-01-01', DATE '2024-12-31') to DATEDIFF(DATE '2024-12-31', DATE '2025-01-01') to get the correct result."",
+  ""sql_query"": ""SELECT DATEDIFF(DATE '2024-12-31', DATE '2025-01-01')""
+}
+```",True,1.0,True
+12,"SELECT DATEDIFF(DATE '2024-03-01', DATE '2024-02-29')",endDate=P_DATE; startDate=P_DATE,1,-1,O_POSITIVE,False,"Output mismatch: expected '1', got '-1'",DIRECT,"```json
+{
+  ""error_analysis"": ""The e6data DATEDIFF function has reversed argument order compared to Spark SQL. In Spark, DATEDIFF(end_date, start_date) returns end_date - start_date. In e6data, DATEDIFF(date1, date2) appears to return date2 - date1, which is why we're getting -1 instead of 1. All failing queries show the sign is flipped."",
+  ""fix_strategy"": ""Reverse the argument order in DATEDIFF call. Instead of DATEDIFF(DATE '2024-03-01', DATE '2024-02-29'), use DATEDIFF(DATE '2024-02-29', DATE '2024-03-01'). This will swap the operands and flip the sign to match Spark's behavior."",
+  ""sql_query"": ""SELECT DATEDIFF(DATE '2024-02-29', DATE '2024-03-01')""
+}
+```",True,1.0,True
+13,"SELECT DATEDIFF(DATE '2024-02-01', DATE '2024-01-31')",endDate=P_DATE; startDate=P_DATE,1,-1,O_POSITIVE,False,"Output mismatch: expected '1', got '-1'",DIRECT,"```json
+{
+  ""error_analysis"": ""The e6data DATEDIFF function has reversed parameter order compared to Spark SQL. In Spark, DATEDIFF(end_date, start_date) returns end_date - start_date. In e6data, DATEDIFF(date1, date2) appears to return date2 - date1, which is why we're getting -1 instead of 1. All failing queries show the negated result."",
+  ""fix_strategy"": ""Swap the parameter order in DATEDIFF call. Use DATEDIFF(start_date, end_date) in e6data to match Spark's DATEDIFF(end_date, start_date) behavior. This will negate the result and produce the correct output."",
+  ""sql_query"": ""SELECT DATEDIFF(DATE '2024-01-31', DATE '2024-02-01')""
+}
+```",True,1.0,True
+14,"SELECT DATEDIFF(DATE '2024-01-01', DATE '2023-12-31')",endDate=P_DATE; startDate=P_DATE,1,-1,O_POSITIVE,False,"Output mismatch: expected '1', got '-1'",DIRECT,"```json
+{
+  ""error_analysis"": ""The e6data DATEDIFF function has reversed parameter order compared to Spark SQL. In Spark, DATEDIFF(endDate, startDate) returns endDate - startDate. In e6data, DATEDIFF(date1, date2) appears to return date2 - date1 (or date1 - date2 with opposite sign). All failures show the negated expected value (expected 1, got -1; expected 365, got -365; expected -365, got 365), confirming the parameter order is reversed."",
+  ""fix_strategy"": ""Swap the parameter order in DATEDIFF to compensate for e6data's reversed implementation. Use DATEDIFF(startDate, endDate) instead of DATEDIFF(endDate, startDate) to produce the correct result."",
+  ""sql_query"": ""SELECT DATEDIFF(DATE '2023-12-31', DATE '2024-01-01')""
+}
+```",True,1.0,True
+16,"SELECT DATEDIFF(DATE '2024-01-15', DATE '2023-01-15')",endDate=P_DATE; startDate=P_DATE,365,-365,O_LARGE_POSITIVE,False,"Output mismatch: expected '365', got '-365'",DIRECT,"```json
+{
+  ""error_analysis"": ""The e6data DATEDIFF function has reversed parameter order compared to Spark SQL. In Spark, DATEDIFF(endDate, startDate) returns endDate - startDate. In e6data, DATEDIFF appears to return startDate - endDate (second parameter minus first parameter), resulting in negated values."",
+  ""fix_strategy"": ""Reverse the parameter order in e6data DATEDIFF to match Spark's semantics. Call DATEDIFF(startDate, endDate) in e6data to get the same result as DATEDIFF(endDate, startDate) in Spark."",
+  ""sql_query"": ""SELECT DATEDIFF(DATE '2023-01-15', DATE '2024-01-15')""
+}
+```",True,1.0,True
+17,"SELECT DATEDIFF(DATE '2023-01-15', DATE '2024-01-15')",endDate=P_DATE; startDate=P_DATE,-365,365,O_LARGE_NEGATIVE,False,"Output mismatch: expected '-365', got '365'",DIRECT,"```json
+{
+  ""error_analysis"": ""The previous attempt failed because e6data's DATEDIFF function has reversed parameter order compared to Spark SQL. In Spark, DATEDIFF(endDate, startDate) returns endDate - startDate. In e6data, DATEDIFF appears to return startDate - endDate (second parameter minus first parameter). All failures show the negated expected value, confirming the parameter order is reversed."",
+  ""fix_strategy"": ""Swap the parameter order in DATEDIFF call. Instead of DATEDIFF(DATE '2023-01-15', DATE '2024-01-15'), use DATEDIFF(DATE '2024-01-15', DATE '2023-01-15') to get the correct result of -365."",
+  ""sql_query"": ""SELECT DATEDIFF(DATE '2024-01-15', DATE '2023-01-15')""
+}
+```",True,1.0,True
+18,"SELECT DATEDIFF(DATE '2024-01-20', DATE '2024-01-15')",endDate=P_DATE; startDate=P_DATE,5,-5,O_POSITIVE,False,"Output mismatch: expected '5', got '-5'",DIRECT,"```json
+{
+  ""error_analysis"": ""The previous attempt got -5 instead of 5. Looking at the translation results, e6data's DATEDIFF function has reversed argument order compared to Spark SQL. In Spark, DATEDIFF(endDate, startDate) returns endDate - startDate. In e6data, DATEDIFF appears to return startDate - endDate (second argument minus first argument). All failing cases show negated results."",
+  ""fix_strategy"": ""Swap the argument order in DATEDIFF call. Instead of DATEDIFF(DATE '2024-01-20', DATE '2024-01-15'), use DATEDIFF(DATE '2024-01-15', DATE '2024-01-20'). This will make e6data compute startDate - endDate, which when arguments are swapped becomes endDate - startDate, matching Spark's behavior."",
+  ""sql_query"": ""SELECT DATEDIFF(DATE '2024-01-15', DATE '2024-01-20')""
+}
+```",True,1.0,True
+19,"SELECT DATEDIFF(DATE '2024-02-29', DATE '2024-02-28')",endDate=P_DATE; startDate=P_DATE,1,-1,O_POSITIVE,False,"Output mismatch: expected '1', got '-1'",DIRECT,"```json
+{
+  ""error_analysis"": ""The e6data DATEDIFF function has reversed parameter order compared to Spark SQL. In Spark, DATEDIFF(endDate, startDate) returns endDate - startDate. In e6data, DATEDIFF(date1, date2) appears to return date2 - date1, which is why we're getting -1 instead of 1."",
+  ""fix_strategy"": ""Swap the parameter order in DATEDIFF to account for e6data's reversed semantics. Use DATEDIFF(startDate, endDate) instead of DATEDIFF(endDate, startDate) to get the correct result."",
+  ""sql_query"": ""SELECT DATEDIFF(DATE '2024-02-28', DATE '2024-02-29')""
+}
+```",True,1.0,True
+20,"SELECT DATEDIFF(DATE '2020-02-29', DATE '2020-02-28')",endDate=P_DATE; startDate=P_DATE,1,-1,O_POSITIVE,False,"Output mismatch: expected '1', got '-1'",DIRECT,"```json
+{
+  ""error_analysis"": ""The e6data DATEDIFF function has reversed parameter order compared to Spark SQL. In Spark, DATEDIFF(end_date, start_date) returns end_date - start_date. In e6data, DATEDIFF(date1, date2) appears to return date2 - date1, which is why we're getting -1 instead of 1."",
+  ""fix_strategy"": ""Swap the parameter order in DATEDIFF to account for e6data's reversed semantics. Use DATEDIFF(start_date, end_date) to get the same result as Spark's DATEDIFF(end_date, start_date)."",
+  ""sql_query"": ""SELECT DATEDIFF(DATE '2020-02-28', DATE '2020-02-29')""
+}
+```",True,1.0,True
+23,"SELECT DATEDIFF(DATE '2024-07-01', DATE '2024-06-30')",endDate=P_DATE; startDate=P_DATE,1,-1,O_POSITIVE,False,"Output mismatch: expected '1', got '-1'",DIRECT,"```json
+{
+  ""error_analysis"": ""The e6data DATEDIFF function has reversed parameter order compared to Spark SQL. In Spark, DATEDIFF(end_date, start_date) returns end_date - start_date. In e6data, DATEDIFF(date1, date2) appears to return date2 - date1, which is why we're getting -1 instead of 1. All failing queries show the negated result."",
+  ""fix_strategy"": ""Swap the parameter order in DATEDIFF to account for e6data's reversed semantics. Use DATEDIFF(start_date, end_date) in e6data to produce the same result as Spark's DATEDIFF(end_date, start_date)."",
+  ""sql_query"": ""SELECT DATEDIFF(DATE '2024-06-30', DATE '2024-07-01')""
+}
+```",True,1.0,True
+24,"SELECT DATEDIFF(DATE '2024-04-01', DATE '2024-03-31')",endDate=P_DATE; startDate=P_DATE,1,-1,O_POSITIVE,False,"Output mismatch: expected '1', got '-1'",DIRECT,"```json
+{
+  ""error_analysis"": ""The previous attempt failed because e6data's DATEDIFF function has reversed parameter order compared to Spark SQL. In Spark, DATEDIFF(endDate, startDate) returns endDate - startDate. In e6data, DATEDIFF(date1, date2) returns date2 - date1 (the opposite). All failing queries show the negated result (expected 1, got -1; expected 365, got -365; expected 3652058, got -3652058)."",
+  ""fix_strategy"": ""Swap the parameter order: use DATEDIFF(startDate, endDate) instead of DATEDIFF(endDate, startDate). This will make e6data compute startDate - endDate, which when negated by e6data's reversed logic gives us endDate - startDate, matching Spark's behavior."",
+  ""sql_query"": ""SELECT DATEDIFF(DATE '2024-03-31', DATE '2024-04-01')""
+}
+```",True,1.0,True
+25,"SELECT DATEDIFF(DATE '2100-01-01', DATE '2099-12-31')",endDate=P_DATE; startDate=P_DATE,1,-1,O_POSITIVE,False,"Output mismatch: expected '1', got '-1'",DIRECT,"```json
+{
+  ""error_analysis"": ""The previous attempt used DATEDIFF directly, which returned -1 instead of 1. Looking at the translation results, e6data's DATEDIFF has reversed argument order compared to Spark SQL. In Spark, DATEDIFF(end_date, start_date) returns end_date - start_date. In e6data, DATEDIFF appears to return start_date - end_date (the second argument minus the first argument). All passing tests show this pattern: when Spark expects 1, e6data returns -1, and vice versa."",
+  ""fix_strategy"": ""Swap the argument order in DATEDIFF. Since Spark's DATEDIFF(date1, date2) = date1 - date2, and e6data's DATEDIFF(date1, date2) = date2 - date1, we need to call DATEDIFF(DATE '2099-12-31', DATE '2100-01-01') to get the correct result of 1."",
+  ""sql_query"": ""SELECT DATEDIFF(DATE '2099-12-31', DATE '2100-01-01')""
+}
+```",True,1.0,True
+26,"SELECT DATEDIFF(DATE '2000-03-01', DATE '2000-02-29')",endDate=P_DATE; startDate=P_DATE,1,-1,O_POSITIVE,False,"Output mismatch: expected '1', got '-1'",DIRECT,"```json
+{
+  ""error_analysis"": ""The e6data DATEDIFF function has reversed parameter order compared to Spark SQL. In Spark, DATEDIFF(endDate, startDate) returns endDate - startDate. In e6data, DATEDIFF(date1, date2) appears to return date2 - date1 (or date1 - date2 with opposite sign). All previous attempts show the negated result: expected 1 got -1, expected 365 got -365, expected -365 got 365, etc."",
+  ""fix_strategy"": ""Swap the parameter order in DATEDIFF call. Instead of DATEDIFF(endDate, startDate), use DATEDIFF(startDate, endDate) to get the correct sign. For this query: DATEDIFF(DATE '2000-02-29', DATE '2000-03-01') should return 1."",
+  ""sql_query"": ""SELECT DATEDIFF(DATE '2000-02-29', DATE '2000-03-01')""
+}
+```",True,1.0,True
+4,"SELECT DATEDIFF(NULL, DATE '2024-01-15')",endDate=P_NULL; startDate=P_DATE,NULL,NULL,O_NULL,True,,DATEDIFF,"SELECT DATEDIFF(NULL, DATE '2024-01-15')",,,True
+5,"SELECT DATEDIFF(DATE '2024-01-15', NULL)",endDate=P_DATE; startDate=P_NULL,NULL,NULL,O_NULL,True,,DATEDIFF,"SELECT DATEDIFF(DATE '2024-01-15', NULL)",,,True
+6,"SELECT DATEDIFF(NULL, NULL)",endDate=P_NULL; startDate=P_NULL,NULL,NULL,O_NULL,True,,DATEDIFF,"SELECT DATEDIFF(NULL, NULL)",,,True
+7,"SELECT DATEDIFF(TIMESTAMP '2024-01-16 10:30:00', TIMESTAMP '2024-01-15 22:00:00')",endDate=P_TIMESTAMP; startDate=P_TIMESTAMP,1,-1,O_POSITIVE,False,"Output mismatch: expected '1', got '-1'",DIRECT,"```json
+{
+  ""error_analysis"": ""The previous attempt returned -1 instead of 1. Looking at the translation results, e6data's DATEDIFF function has reversed argument order compared to Spark SQL. When using DATE types, all queries show the opposite sign (e.g., expected 1 got -1, expected -1 got 1, expected 365 got -365). This indicates e6data's DATEDIFF(endDate, startDate) actually computes startDate - endDate instead of endDate - startDate."",
+  ""fix_strategy"": ""Swap the argument order in DATEDIFF to match Spark's semantics. Spark's DATEDIFF(endDate, startDate) computes endDate - startDate, while e6data's DATEDIFF appears to compute startDate - endDate. Therefore, use DATEDIFF(startDate, endDate) in e6data to get the correct result."",
+  ""sql_query"": ""SELECT DATEDIFF(TIMESTAMP '2024-01-15 22:00:00', TIMESTAMP '2024-01-16 10:30:00')""
+}
+```",True,1.0,True
+21,"SELECT DATEDIFF(TIMESTAMP '2024-01-16 23:59:59', TIMESTAMP '2024-01-16 00:00:01')",endDate=P_TIMESTAMP; startDate=P_TIMESTAMP,0,0,O_ZERO,True,,DATEDIFF,"SELECT DATEDIFF(TIMESTAMP '2024-01-16 23:59:59', TIMESTAMP '2024-01-16 00:00:01')",,,True
+22,"SELECT DATEDIFF(TIMESTAMP '2024-01-17 00:00:00', TIMESTAMP '2024-01-16 23:59:59')",endDate=P_TIMESTAMP; startDate=P_TIMESTAMP,1,-1,O_POSITIVE,False,"Output mismatch: expected '1', got '-1'",DIRECT,"```json
+{
+  ""error_analysis"": ""The previous attempt returned -1 instead of 1. Looking at the translation results, e6data's DATEDIFF function has reversed argument order compared to Spark SQL. In Spark, DATEDIFF(endDate, startDate) returns endDate - startDate. In e6data, DATEDIFF appears to return startDate - endDate (second argument minus first argument). All DATE partition queries show this reversal pattern."",
+  ""fix_strategy"": ""Swap the argument order: use DATEDIFF(startDate, endDate) instead of DATEDIFF(endDate, startDate). This will make e6data compute startDate - endDate, which when negated gives us endDate - startDate, matching Spark's behavior. Actually, simpler: just swap the arguments so e6data computes what Spark computes."",
+  ""sql_query"": ""SELECT DATEDIFF(TIMESTAMP '2024-01-16 23:59:59', TIMESTAMP '2024-01-17 00:00:00')""
+}
+```",True,1.0,True
+8,"SELECT DATEDIFF('2024-01-16', '2024-01-15')",endDate=P_STRING_CASTABLE; startDate=P_STRING_CASTABLE,1,-1,O_POSITIVE,False,"Output mismatch: expected '1', got '-1'",DIRECT,"```json
+{
+  ""error_analysis"": ""The previous attempt returned -1 instead of 1. Looking at the translation results, e6data's DATEDIFF function has reversed parameter order compared to Spark SQL. In Spark, DATEDIFF(end_date, start_date) returns end_date - start_date. In e6data, DATEDIFF appears to calculate start_date - end_date (first parameter minus second parameter). All passing tests show this pattern: when Spark expects 1, e6data returns -1, and when Spark expects -1, e6data returns 1."",
+  ""fix_strategy"": ""Swap the parameter order in DATEDIFF to account for e6data's reversed calculation. Instead of DATEDIFF('2024-01-16', '2024-01-15'), use DATEDIFF('2024-01-15', '2024-01-16') to get the correct result of 1."",
+  ""sql_query"": ""SELECT DATEDIFF('2024-01-15', '2024-01-16')""
+}
+```",True,1.0,True
+9,"SELECT DATEDIFF('2024-01-16', DATE '2024-01-15')",endDate=P_STRING_CASTABLE; startDate=P_DATE,1,-1,O_POSITIVE,False,"Output mismatch: expected '1', got '-1'",DIRECT,"```json
+{
+  ""error_analysis"": ""The previous attempt returned -1 instead of 1. Looking at the translation results, e6data's DATEDIFF function has reversed parameter order compared to Spark SQL. In Spark, DATEDIFF(end, start) returns end - start. In e6data, DATEDIFF(end, start) appears to return start - end. All passing tests show this consistent reversal: when Spark expects 1, e6data returns -1, and vice versa."",
+  ""fix_strategy"": ""Swap the parameter order in DATEDIFF to account for e6data's reversed semantics. Change DATEDIFF('2024-01-16', DATE '2024-01-15') to DATEDIFF(DATE '2024-01-15', '2024-01-16') so that e6data computes the difference in the opposite direction, yielding the correct result."",
+  ""sql_query"": ""SELECT DATEDIFF(DATE '2024-01-15', '2024-01-16')""
+}
+```",True,1.0,True
+15,"SELECT DATEDIFF(DATE '9999-12-31', DATE '0001-01-01')",endDate=P_DATE_EXTREME; startDate=P_DATE_EXTREME,3652058,-3652058,O_VERY_LARGE_POSITIVE,False,"Output mismatch: expected '3652058', got '-3652058'",DIRECT,"```json
+{
+  ""error_analysis"": ""The previous attempt returned -3652058 instead of 3652058. Looking at all the test results, e6data's DATEDIFF function has the arguments reversed compared to Spark SQL. In Spark, DATEDIFF(end_date, start_date) returns positive when end_date > start_date. In e6data, DATEDIFF appears to calculate start_date - end_date instead of end_date - start_date, which is why all results are negated."",
+  ""fix_strategy"": ""Swap the argument order in DATEDIFF to compensate for e6data's reversed parameter semantics. Use DATEDIFF(DATE '0001-01-01', DATE '9999-12-31') instead of DATEDIFF(DATE '9999-12-31', DATE '0001-01-01')."",
+  ""sql_query"": ""SELECT DATEDIFF(DATE '0001-01-01', DATE '9999-12-31')""
+}
+```",True,1.0,True

@@ -1,0 +1,27 @@
+id,query,input_partition,actual_output,codomain_class,reasoning
+1,"SELECT DATEDIFF(DATE '2024-01-16', DATE '2024-01-15')",endDate=P_DATE; startDate=P_DATE,1,O_POSITIVE,1 day forward difference
+2,"SELECT DATEDIFF(DATE '2024-01-15', DATE '2024-01-16')",endDate=P_DATE; startDate=P_DATE,-1,O_NEGATIVE,1 day backward difference
+3,"SELECT DATEDIFF(DATE '2024-01-15', DATE '2024-01-15')",endDate=P_DATE; startDate=P_DATE,0,O_ZERO,Same date yields zero
+4,"SELECT DATEDIFF(NULL, DATE '2024-01-15')",endDate=P_NULL; startDate=P_DATE,NULL,O_NULL,First parameter NULL propagates
+5,"SELECT DATEDIFF(DATE '2024-01-15', NULL)",endDate=P_DATE; startDate=P_NULL,NULL,O_NULL,Second parameter NULL propagates
+6,"SELECT DATEDIFF(NULL, NULL)",endDate=P_NULL; startDate=P_NULL,NULL,O_NULL,Both NULL propagates
+7,"SELECT DATEDIFF(TIMESTAMP '2024-01-16 10:30:00', TIMESTAMP '2024-01-15 22:00:00')",endDate=P_TIMESTAMP; startDate=P_TIMESTAMP,1,O_POSITIVE,Timestamp truncates to date - 1 day forward
+8,"SELECT DATEDIFF('2024-01-16', '2024-01-15')",endDate=P_STRING_CASTABLE; startDate=P_STRING_CASTABLE,1,O_POSITIVE,String implicitly cast to date
+9,"SELECT DATEDIFF('2024-01-16', DATE '2024-01-15')",endDate=P_STRING_CASTABLE; startDate=P_DATE,1,O_POSITIVE,Mixed string and date - string casts to date
+10,"SELECT DATEDIFF(DATE '2024-12-31', DATE '2024-01-01')",endDate=P_DATE; startDate=P_DATE,365,O_LARGE_POSITIVE,Year end to year start in leap year
+11,"SELECT DATEDIFF(DATE '2025-01-01', DATE '2024-12-31')",endDate=P_DATE; startDate=P_DATE,1,O_POSITIVE,Year boundary cross forward
+12,"SELECT DATEDIFF(DATE '2024-03-01', DATE '2024-02-29')",endDate=P_DATE; startDate=P_DATE,1,O_POSITIVE,Leap year Feb boundary
+13,"SELECT DATEDIFF(DATE '2024-02-01', DATE '2024-01-31')",endDate=P_DATE; startDate=P_DATE,1,O_POSITIVE,Month boundary Jan to Feb
+14,"SELECT DATEDIFF(DATE '2024-01-01', DATE '2023-12-31')",endDate=P_DATE; startDate=P_DATE,1,O_POSITIVE,Year boundary cross backward dates
+15,"SELECT DATEDIFF(DATE '9999-12-31', DATE '0001-01-01')",endDate=P_DATE_EXTREME; startDate=P_DATE_EXTREME,3652058,O_VERY_LARGE_POSITIVE,Maximum date range
+16,"SELECT DATEDIFF(DATE '2024-01-15', DATE '2023-01-15')",endDate=P_DATE; startDate=P_DATE,365,O_LARGE_POSITIVE,One year forward in leap year
+17,"SELECT DATEDIFF(DATE '2023-01-15', DATE '2024-01-15')",endDate=P_DATE; startDate=P_DATE,-365,O_LARGE_NEGATIVE,One year backward from leap year
+18,"SELECT DATEDIFF(DATE '2024-01-20', DATE '2024-01-15')",endDate=P_DATE; startDate=P_DATE,5,O_POSITIVE,5 days forward
+19,"SELECT DATEDIFF(DATE '2024-02-29', DATE '2024-02-28')",endDate=P_DATE; startDate=P_DATE,1,O_POSITIVE,Leap day to previous day
+20,"SELECT DATEDIFF(DATE '2020-02-29', DATE '2020-02-28')",endDate=P_DATE; startDate=P_DATE,1,O_POSITIVE,Leap year 2020 Feb boundary
+21,"SELECT DATEDIFF(TIMESTAMP '2024-01-16 23:59:59', TIMESTAMP '2024-01-16 00:00:01')",endDate=P_TIMESTAMP; startDate=P_TIMESTAMP,0,O_ZERO,Same day different times truncate to zero
+22,"SELECT DATEDIFF(TIMESTAMP '2024-01-17 00:00:00', TIMESTAMP '2024-01-16 23:59:59')",endDate=P_TIMESTAMP; startDate=P_TIMESTAMP,1,O_POSITIVE,Timestamp just crossing midnight
+23,"SELECT DATEDIFF(DATE '2024-07-01', DATE '2024-06-30')",endDate=P_DATE; startDate=P_DATE,1,O_POSITIVE,Month boundary Jun to Jul
+24,"SELECT DATEDIFF(DATE '2024-04-01', DATE '2024-03-31')",endDate=P_DATE; startDate=P_DATE,1,O_POSITIVE,Month boundary Mar to Apr
+25,"SELECT DATEDIFF(DATE '2100-01-01', DATE '2099-12-31')",endDate=P_DATE; startDate=P_DATE,1,O_POSITIVE,Century boundary non-leap year
+26,"SELECT DATEDIFF(DATE '2000-03-01', DATE '2000-02-29')",endDate=P_DATE; startDate=P_DATE,1,O_POSITIVE,Leap year 2000 Feb to Mar boundary

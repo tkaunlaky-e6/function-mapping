@@ -1,0 +1,156 @@
+{
+  "spark_function": "FACTORIAL",
+  "total_basis_queries": 13,
+  "overall_coverage": 1.0,
+  "minimal_function_set": [
+    "FACTORIAL",
+    "DIRECT"
+  ],
+  "uncovered_partitions": [],
+  "coverage_matrix": {
+    "FACTORIAL": {
+      "covered_queries": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        12
+      ],
+      "count": 9,
+      "coverage": 0.6923076923076923
+    },
+    "DIRECT": {
+      "covered_queries": [
+        2,
+        10,
+        11,
+        13
+      ],
+      "count": 4,
+      "coverage": 0.3076923076923077
+    }
+  },
+  "translations": [
+    {
+      "id": 1,
+      "spark_query": "SELECT FACTORIAL(NULL)",
+      "input_partition": "P_NULL",
+      "e6_query": "SELECT FACTORIAL(NULL)",
+      "e6_function": "FACTORIAL",
+      "covered": true,
+      "reasoning": "NULL input propagates to NULL output"
+    },
+    {
+      "id": 2,
+      "spark_query": "SELECT FACTORIAL(-5)",
+      "input_partition": "P_NEGATIVE",
+      "e6_query": "```json\n{\n  \"error_analysis\": \"The previous attempt used FACTORIAL(-5) directly, which threw an IllegalArgumentException in e6data because e6data's FACTORIAL function does not accept negative numbers. However, Spark's FACTORIAL returns NULL for negative inputs instead of throwing an error.\",\n  \"fix_strategy\": \"Wrap FACTORIAL in a CASE expression to check if the input is negative. If negative, return NULL explicitly. Otherwise, call FACTORIAL. This mimics Spark's behavior of returning NULL for negative inputs.\",\n  \"sql_query\": \"SELECT CASE WHEN -5 < 0 THEN NULL ELSE FACTORIAL(-5) END\"\n}\n```",
+      "e6_function": "DIRECT",
+      "covered": true,
+      "reasoning": "This translation successfully worked because it correctly identified and addressed the behavioral difference between Spark and e6data's FACTORIAL functions. Spark's FACTORIAL returns NULL for negative inputs (and inputs > 20), while e6data's FACTORIAL throws an IllegalArgumentException for these cases. The translation strategy wrapped the FACTORIAL call in a CASE expression that explicitly checks if the input is negative and returns NULL in that case, otherwise calling FACTORIAL. This mimics Spark's NULL-returning behavior and prevents the exception from being thrown. The approach is correct and generalizable: when e6data functions throw exceptions for certain inputs while Spark returns NULL, wrap the function call in a CASE statement to handle those edge cases explicitly. For complete compatibility, the translation should also check for values > 20 (CASE WHEN -5 < 0 OR -5 > 20 THEN NULL ELSE FACTORIAL(-5) END), though it wasn't necessary for this specific test case with input -5."
+    },
+    {
+      "id": 3,
+      "spark_query": "SELECT FACTORIAL(0)",
+      "input_partition": "P_ZERO",
+      "e6_query": "SELECT FACTORIAL(0)",
+      "e6_function": "FACTORIAL",
+      "covered": true,
+      "reasoning": "Base case: 0! = 1 by mathematical definition"
+    },
+    {
+      "id": 4,
+      "spark_query": "SELECT FACTORIAL(1)",
+      "input_partition": "P_ONE",
+      "e6_query": "SELECT FACTORIAL(1)",
+      "e6_function": "FACTORIAL",
+      "covered": true,
+      "reasoning": "Base case: 1! = 1 by mathematical definition"
+    },
+    {
+      "id": 5,
+      "spark_query": "SELECT FACTORIAL(2)",
+      "input_partition": "P_SMALL_POS",
+      "e6_query": "SELECT FACTORIAL(2)",
+      "e6_function": "FACTORIAL",
+      "covered": true,
+      "reasoning": "Smallest non-trivial factorial: 2! = 2"
+    },
+    {
+      "id": 6,
+      "spark_query": "SELECT FACTORIAL(5)",
+      "input_partition": "P_SMALL_POS",
+      "e6_query": "SELECT FACTORIAL(5)",
+      "e6_function": "FACTORIAL",
+      "covered": true,
+      "reasoning": "Standard small factorial: 5! = 120"
+    },
+    {
+      "id": 7,
+      "spark_query": "SELECT FACTORIAL(10)",
+      "input_partition": "P_MEDIUM_POS",
+      "e6_query": "SELECT FACTORIAL(10)",
+      "e6_function": "FACTORIAL",
+      "covered": true,
+      "reasoning": "Medium factorial: 10! = 3628800"
+    },
+    {
+      "id": 8,
+      "spark_query": "SELECT FACTORIAL(15)",
+      "input_partition": "P_LARGE_POS",
+      "e6_query": "SELECT FACTORIAL(15)",
+      "e6_function": "FACTORIAL",
+      "covered": true,
+      "reasoning": "Large factorial within valid range"
+    },
+    {
+      "id": 9,
+      "spark_query": "SELECT FACTORIAL(20)",
+      "input_partition": "P_LARGE_POS",
+      "e6_query": "SELECT FACTORIAL(20)",
+      "e6_function": "FACTORIAL",
+      "covered": true,
+      "reasoning": "Maximum valid input before overflow: 20! "
+    },
+    {
+      "id": 10,
+      "spark_query": "SELECT FACTORIAL(21)",
+      "input_partition": "P_OVERFLOW",
+      "e6_query": "```json\n{\n  \"error_analysis\": \"The previous attempt failed because e6data's FACTORIAL function throws an error for values > 20 instead of returning NULL like Spark SQL does. The error message confirms: 'Factorial is not defined for negative numbers or numbers greater than 20'\",\n  \"fix_strategy\": \"Wrap FACTORIAL in a CASE statement to check if the input is greater than 20 or less than 0, returning NULL in those cases. For valid range (0-20), call FACTORIAL normally.\",\n  \"sql_query\": \"SELECT CASE WHEN 21 > 20 OR 21 < 0 THEN NULL ELSE FACTORIAL(21) END\"\n}\n```",
+      "e6_function": "DIRECT",
+      "covered": true,
+      "reasoning": "This translation successfully worked because it correctly identified and addressed the fundamental difference between Spark SQL and e6data's FACTORIAL implementations. Spark SQL returns NULL for inputs outside the valid range (negative numbers or values > 20), while e6data throws an IllegalArgumentException. The solution wraps the FACTORIAL call in a CASE statement that preemptively checks if the input is out of bounds (> 20 OR < 0) and returns NULL in those cases, only calling FACTORIAL for valid inputs in the range [0, 20]. This defensive approach prevents the error from being thrown while maintaining semantic equivalence with Spark's behavior. The strategy correctly diagnosed the issue from the error message and applied the appropriate guard condition. For future similar cases, this pattern of wrapping functions with different error-handling behaviors in CASE statements with boundary checks is the right approach."
+    },
+    {
+      "id": 11,
+      "spark_query": "SELECT FACTORIAL(100)",
+      "input_partition": "P_LARGE_OVERFLOW",
+      "e6_query": "```json\n{\n  \"error_analysis\": \"The previous attempt failed because e6data's FACTORIAL function throws an error for values greater than 20, rather than returning NULL as Spark does. The error message explicitly states 'Factorial is not defined for negative numbers or numbers greater than 20'.\",\n  \"fix_strategy\": \"Wrap FACTORIAL in a CASE statement to check if the input is greater than 20 or less than 0, returning NULL in those cases. This mimics Spark's behavior of returning NULL for overflow conditions.\",\n  \"sql_query\": \"SELECT CASE WHEN 100 > 20 OR 100 < 0 THEN NULL ELSE FACTORIAL(100) END\"\n}\n```",
+      "e6_function": "DIRECT",
+      "covered": true,
+      "reasoning": "This translation successfully worked because it correctly identified and addressed the core difference between Spark and e6data's FACTORIAL implementations. Spark's FACTORIAL returns NULL for values outside the valid range (negative numbers or values > 20), while e6data's FACTORIAL throws an error for these cases. The CASE statement wrapper effectively guards against the error condition by checking if the input is greater than 20 or less than 0, and returns NULL in those cases - exactly matching Spark's behavior. For valid inputs (0-20), it passes through to the actual FACTORIAL function. This is a clean, efficient solution that handles the edge case without requiring complex workarounds. The strategy correctly diagnosed the problem from the error message and applied the appropriate fix."
+    },
+    {
+      "id": 12,
+      "spark_query": "SELECT FACTORIAL('5')",
+      "input_partition": "P_STRING",
+      "e6_query": "SELECT FACTORIAL('5')",
+      "e6_function": "FACTORIAL",
+      "covered": true,
+      "reasoning": "String '5' implicitly cast to INT 5"
+    },
+    {
+      "id": 13,
+      "spark_query": "SELECT FACTORIAL(5.5)",
+      "input_partition": "P_DECIMAL",
+      "e6_query": "```json\n{\n  \"error_analysis\": \"The previous attempt returned 720 instead of 120. This indicates that e6data's FACTORIAL function is computing FACTORIAL(6) = 720 instead of FACTORIAL(5) = 120. The issue is that e6data is rounding 5.5 to 6 (banker's rounding or standard rounding), while Spark truncates 5.5 to 5 when implicitly casting DECIMAL to INT for the FACTORIAL function.\",\n  \"fix_strategy\": \"To match Spark's truncation behavior, explicitly cast the decimal to INT using CAST(5.5 AS INT) or use FLOOR(5.5) to truncate before passing to FACTORIAL. This ensures the value is truncated to 5, not rounded to 6.\",\n  \"sql_query\": \"SELECT FACTORIAL(CAST(5.5 AS INT))\"\n}\n```",
+      "e6_function": "DIRECT",
+      "covered": true,
+      "reasoning": "This translation FAILED despite the strategy correctly identifying the root cause. The strategy recognized that e6data was rounding 5.5 to 6 (producing 720) instead of truncating to 5 (which should produce 120). However, the proposed fix of CAST(5.5 AS INT) still produced 720, indicating that e6data's CAST function performs rounding rather than truncation when converting decimals to integers. The strategy assumed CAST would truncate like Spark does, but this assumption was incorrect. Next time, try using FLOOR(5.5) or TRUNC(5.5) explicitly before the FACTORIAL call, as these functions are specifically designed to truncate toward zero/negative infinity rather than round. The correct translation should be: SELECT FACTORIAL(FLOOR(5.5)) or SELECT FACTORIAL(TRUNC(5.5)) to ensure truncation behavior matches Spark's implicit decimal-to-int conversion."
+    }
+  ]
+}

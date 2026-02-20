@@ -1,0 +1,14 @@
+id,query,input_partition,actual_output,codomain_class,reasoning
+1,SELECT FACTORIAL(NULL),P_NULL,NULL,O_NULL,NULL input propagates to NULL output
+2,SELECT FACTORIAL(-5),P_NEGATIVE,NULL,O_NULL,Factorial undefined for negative integers
+3,SELECT FACTORIAL(0),P_ZERO,1,O_ONE,Base case: 0! = 1 by mathematical definition
+4,SELECT FACTORIAL(1),P_ONE,1,O_ONE,Base case: 1! = 1 by mathematical definition
+5,SELECT FACTORIAL(2),P_SMALL_POS,2,O_SMALL_FACTORIAL,Smallest non-trivial factorial: 2! = 2
+6,SELECT FACTORIAL(5),P_SMALL_POS,120,O_SMALL_FACTORIAL,Standard small factorial: 5! = 120
+7,SELECT FACTORIAL(10),P_MEDIUM_POS,3628800,O_SMALL_FACTORIAL,Medium factorial: 10! = 3628800
+8,SELECT FACTORIAL(15),P_LARGE_POS,1307674368000,O_LARGE_FACTORIAL,Large factorial within valid range
+9,SELECT FACTORIAL(20),P_LARGE_POS,2432902008176640000,O_LARGE_FACTORIAL,Maximum valid input before overflow: 20! 
+10,SELECT FACTORIAL(21),P_OVERFLOW,NULL,O_NULL,Overflow boundary: 21! exceeds BIGINT capacity
+11,SELECT FACTORIAL(100),P_LARGE_OVERFLOW,NULL,O_NULL,Large overflow: far beyond valid range
+12,SELECT FACTORIAL('5'),P_STRING,120,O_SMALL_FACTORIAL,String '5' implicitly cast to INT 5
+13,SELECT FACTORIAL(5.5),P_DECIMAL,120,O_SMALL_FACTORIAL,Decimal 5.5 implicitly cast to INT 5 (truncation)
